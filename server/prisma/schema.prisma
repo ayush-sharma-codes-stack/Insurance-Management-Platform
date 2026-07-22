@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String     @id @default(uuid())
+  name             String
+  email            String     @unique
+  password         String
+  role             String     @default("CUSTOMER")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  customer         Customer?
+  assignedPolicies Policy[]   @relation("AgentPolicies")
+  reviewedClaims   Claim[]    @relation("ReviewedClaims")
+
+  @@index([email])
+  @@map("users")
+}
+
+model Customer {
+  id        String     @id @default(uuid())
+  userId    String?    @unique @map("user_id")
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  dob       DateTime
+  phone     String
+  address   String
+  email     String     @unique
+  createdAt DateTime   @default(now()) @map("created_at")
+  policies  Policy[]
+  documents Document[]
+
+  @@index([email])
+  @@map("customers")
+}
+
+model Policy {
+  id            String    @id @default(uuid())
+  customerId    String    @map("customer_id")
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  agentId       String    @map("agent_id")
+  agent         User      @relation("AgentPolicies", fields: [agentId], references: [id], onDelete: Cascade)
+  policyType    String    @map("policy_type")
+  policyNumber  String    @unique @map("policy_number")
+  premiumAmount Float     @map("premium_amount")
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime  @map("end_date")
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  claims        Claim[]
+  premiums      Premium[]
+
+  @@index([customerId])
+  @@index([agentId])
+  @@index([policyNumber])
+  @@map("policies")
+}
+
+model Claim {
+  id             String     @id @default(uuid())
+  policyId       String     @map("policy_id")
+  policy         Policy     @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  claimAmount    Float      @map("claim_amount")
+  reason         String
+  status         String     @default("PENDING")
+  submissionDate DateTime   @default(now()) @map("submission_date")
+  reviewedBy     String?    @map("reviewed_by")
+  reviewer       User?      @relation("ReviewedClaims", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  reviewNotes    String?    @map("review_notes")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  documents      Document[]
+
+  @@index([policyId])
+  @@index([reviewedBy])
+  @@map("claims")
+}
+
+model Premium {
+  id            String    @id @default(uuid())
+  policyId      String    @map("policy_id")
+  policy        Policy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  paymentDate   DateTime? @map("payment_date")
+  amount        Float
+  paymentStatus String    @default("PENDING") @map("payment_status")
+  dueDate       DateTime  @map("due_date")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([policyId])
+  @@map("premiums")
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  claimId    String?  @map("claim_id")
+  claim      Claim?   @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  fileName   String   @map("file_name")
+  filePath   String   @map("file_path")
+  fileType   String   @map("file_type")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  @@index([customerId])
+  @@index([claimId])
+  @@map("documents")
+}
