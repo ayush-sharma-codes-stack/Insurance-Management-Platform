@@ -45,7 +45,7 @@ postgresql://user:password@dpg-xxxx.oregon-postgres.render.com/insurance_db
    - **Name:** `insurance-api`
    - **Root Directory:** `server`
    - **Runtime:** Node
-   - **Build Command:** `npm install && npm run build`
+   - **Build Command:** `chmod +x render-build.sh && bash render-build.sh`
    - **Start Command:** `npm start`
    - **Plan:** Free
 4. **"Advanced"** → **"Add Environment Variable"** — yeh sab add karo:
