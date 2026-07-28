@@ -20,10 +20,44 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true,
-}));
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://localhost:4173',
+];
+
+if (process.env.CLIENT_URL) {
+  const origins = process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''));
+  allowedOrigins.push(...origins);
+}
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      const sanitizedOrigin = origin.replace(/\/$/, '');
+
+      if (allowedOrigins.includes(sanitizedOrigin)) {
+        return callback(null, true);
+      }
+
+      if (/\.vercel\.app$/.test(sanitizedOrigin)) {
+        return callback(null, true);
+      }
+
+      if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(sanitizedOrigin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS policy error: Origin ${origin} not allowed by CORS`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  })
+);
 
 app.use(morgan('dev'));
 app.use(express.json());
