@@ -37,7 +37,7 @@ const generateTokens = (user) => {
  */
 const register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -54,13 +54,17 @@ const register = async (req, res, next) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const userRole = (role && ['ADMIN', 'AGENT', 'CUSTOMER'].includes(role.toUpperCase())) 
+      ? role.toUpperCase() 
+      : 'CUSTOMER';
+
     const user = await prisma.user.create({
       data: {
         name,
         email: email.toLowerCase(),
         password: hashedPassword,
-        role: 'CUSTOMER',
-        customer: {
+        role: userRole,
+        customer: userRole === 'CUSTOMER' ? {
           create: {
             name,
             email: email.toLowerCase(),
@@ -68,7 +72,7 @@ const register = async (req, res, next) => {
             address: 'N/A',
             dob: new Date('1990-01-01'),
           },
-        },
+        } : undefined,
       },
       include: {
         customer: true,

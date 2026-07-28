@@ -4,12 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, User, Lock, Mail } from 'lucide-react';
+import { UserPlus, User, Lock, Mail, ShieldCheck } from 'lucide-react';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['CUSTOMER', 'AGENT', 'ADMIN']),
 });
 
 export default function Register() {
@@ -23,12 +24,15 @@ export default function Register() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      role: 'CUSTOMER',
+    },
   });
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      await registerAuth(data.name, data.email, data.password);
+      await registerAuth(data.name, data.email, data.password, data.role);
       navigate('/');
     } catch (err) {
       // Handled in AuthContext toast
@@ -46,11 +50,27 @@ export default function Register() {
           <div className="inline-flex items-center justify-center p-3 bg-indigo-600/10 text-indigo-400 rounded-xl mb-3 border border-indigo-500/20">
             <UserPlus className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">Create Customer Account</h2>
-          <p className="text-slate-400 text-sm mt-1">Get instant access to your insurance policy portal</p>
+          <h2 className="text-2xl font-extrabold text-white tracking-tight">Create Account</h2>
+          <p className="text-slate-400 text-sm mt-1">Get instant access to your insurance management portal</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Account Role / Type</label>
+            <div className="relative">
+              <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+              <select
+                {...register('role')}
+                className="w-full bg-slate-900/80 border border-slate-700/80 rounded-xl py-2.5 pl-10 pr-4 text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition appearance-none"
+              >
+                <option value="CUSTOMER" className="bg-slate-900">Customer (Policy Holder)</option>
+                <option value="AGENT" className="bg-slate-900">Insurance Agent (Manage Policies)</option>
+                <option value="ADMIN" className="bg-slate-900">Administrator (Full Access)</option>
+              </select>
+            </div>
+            {errors.role && <p className="text-red-400 text-xs mt-1">{errors.role.message}</p>}
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Full Name</label>
             <div className="relative">
