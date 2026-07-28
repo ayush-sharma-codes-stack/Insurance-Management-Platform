@@ -87,8 +87,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const switchRole = async (newRole) => {
+    try {
+      const res = await api.put('/auth/role', { role: newRole });
+      const { accessToken, user: userData } = res.data.data;
+      setAccessToken(accessToken);
+      setUser(userData);
+      toast.success(`Role switched to ${newRole}!`);
+      return userData;
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to switch role';
+      toast.error(message);
+      throw new Error(message);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, switchRole }}>
       {children}
     </AuthContext.Provider>
   );

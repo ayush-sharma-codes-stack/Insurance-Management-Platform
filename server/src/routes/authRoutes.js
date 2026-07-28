@@ -16,5 +16,6 @@ router.post('/login', validate(loginSchema), authController.login);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
 router.get('/me', authenticate, authController.getMe);
+router.put('/role', authenticate, authController.switchRole);
 
 module.exports = router;

@@ -266,10 +266,63 @@ const getMe = async (req, res) => {
   });
 };
 
+/**
+ * Switch current authenticated user's role (ADMIN, AGENT, CUSTOMER).
+ * @route PUT /api/auth/role
+ */
+const switchRole = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    const targetRole = role ? role.toUpperCase() : 'CUSTOMER';
+    if (!['ADMIN', 'AGENT', 'CUSTOMER'].includes(targetRole)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified',
+        error: 'Bad Request',
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { role: targetRole },
+      include: {
+        customer: { select: { id: true } },
+      },
+    });
+
+    const { accessToken, refreshToken } = generateTokens(updatedUser);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Role successfully updated to ${targetRole}`,
+      data: {
+        accessToken,
+        user: {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          customerId: updatedUser.customer ? updatedUser.customer.id : null,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   refresh,
   logout,
   getMe,
+  switchRole,
 };
